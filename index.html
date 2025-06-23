@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>The Great Races</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>The Great Races</h1>
+
+    <div class="mode-select">
+      <label for="mode">Select Mode:</label>
+      <select id="mode">
+        <option value="2p">2 Players</option>
+        <option value="3p">3 Players</option>
+      </select>
+      <button id="startGame">Start Game</button>
+      <button id="restartGame" class="hidden">Restart Game</button>
+    </div>
+
+    <div id="scoreDisplay"></div>
+    <div id="turnIndicator">Current Turn: -</div>
+
+    <div id="pointsLabels" class="points-labels"></div>
+    <div class="grid-board-wrapper">
+      <div class="grid-board" id="gridBoard"></div>
+      <div class="track-labels" id="trackLabels"></div>
+    </div>
+
+    <div class="dice-section">
+      <button id="rollDiceBtn" class="hidden">Roll Dice</button>
+      <div id="diceContainer" class="dice-area"></div>
+      <button id="showCombos" class="hidden">Show Combinations</button>
+      <div id="combinations" class="hidden"></div>
+      <button id="confirmPair" class="hidden">Confirm Move</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="winner" class="hidden"></div>
+  </div>
+
+  <div class="rules-box" id="rulesBox">
+    <h3>Game Rules</h3>
+    <ul id="rulesContent"></ul>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
