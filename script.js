@@ -13,6 +13,20 @@ const tracks = {
 };
 
 const playerColors = ["red", "blue", "green"];
+
+let gameState = {
+  players: [],
+  currentPlayerIndex: 0,
+  dice: [],
+  selectedDice: [],
+  selectedPair: null,
+  hasRolled: false,
+  completedTracks: new Set(),
+  yellowEntries: {}, // trackNum -> [{ color, step, order }]
+  entryCounter: 0,
+};
+
+// DOM Elements
 const gridBoard = $("#gridBoard");
 const trackLabels = $("#trackLabels");
 const scoreDisplay = $("#scoreDisplay");
@@ -26,33 +40,55 @@ const showCombosBtn = $("#showCombos");
 const pairConfirmBtn = $("#confirmPair");
 const restartBtn = $("#restartGame");
 
-let gameState = {
-  players: [],
-  currentPlayerIndex: 0,
-  dice: [],
-  selectedDice: [],
-  selectedPair: null,
-  hasRolled: false,
-  trackClaims: {}, // { trackNum: [color1, color2, ...] }
-  cellEntryOrder: {} // { trackNum: { stepIndex: [color1, color2] } }
-};
+function makePlayer(name, color) {
+  return { name, color, score: 0, positions: {} };
+}
+
+function startGame(mode) {
+  gameState.players = [];
+  if (mode === "2p") {
+    gameState.players = [makePlayer("Red", "red"), makePlayer("Blue", "blue")];
+  } else {
+    gameState.players = [
+      makePlayer("Red", "red"),
+      makePlayer("Blue", "blue"),
+      makePlayer("Green", "green"),
+    ];
+  }
+
+  resetGameState();
+  createTracks();
+  updateUI();
+}
+
+function resetGameState() {
+  gameState.currentPlayerIndex = 0;
+  gameState.completedTracks = new Set();
+  gameState.yellowEntries = {};
+  gameState.entryCounter = 0;
+  gameState.dice = [];
+  gameState.selectedDice = [];
+  gameState.selectedPair = null;
+  gameState.hasRolled = false;
+}
 
 function createTracks() {
   gridBoard.empty();
   trackLabels.empty();
   $("#pointsLabels").empty();
+
   for (let i = 2; i <= 12; i++) {
     const col = $(`<div class="track-column" data-sum="${i}"></div>`);
     const totalSteps = tracks[i].white + tracks[i].yellow;
+
     for (let j = 0; j < totalSteps; j++) {
       const cell = $(`<div class="track-cell"></div>`);
       if (j >= tracks[i].white) cell.addClass("finish");
       col.append(cell);
     }
+
     gridBoard.append(col);
     trackLabels.append(`<div>Track ${i}</div>`);
-
-    // Points label above track
     $("#pointsLabels").append(`
       <div class="points-label">
         <div style="font-size: 12px;">1st: ${tracks[i].points}</div>
@@ -62,35 +98,12 @@ function createTracks() {
   }
 }
 
-function startGame(mode) {
-  gameState.players = [];
-  if (mode === "2p") {
-    gameState.players = [makePlayer("Red", "red"), makePlayer("Blue", "blue")];
-  } else if (mode === "3p") {
-    gameState.players = [makePlayer("Red", "red"), makePlayer("Blue", "blue"), makePlayer("Green", "green")];
-  }
-  gameState.currentPlayerIndex = 0;
-  gameState.trackClaims = {};
-  gameState.cellEntryOrder = {};
-  createTracks();
-  updateUI();
-  updateRulesBox(mode);
-}
-
-function makePlayer(name, color) {
-  return {
-    name,
-    color,
-    score: 0,
-    positions: {},
-    finishes: {},
-    finishOrder: []
-  };
-}
-
 function updateUI() {
-  const scores = gameState.players.map(p => `<span style="color:${p.color}">${p.name}: ${p.score} pts</span>`).join(" | ");
+  const scores = gameState.players
+    .map(p => `<span style="color:${p.color}">${p.name}: ${p.score} pts</span>`)
+    .join(" | ");
   scoreDisplay.html(scores);
+
   const current = gameState.players[gameState.currentPlayerIndex];
   turnIndicator.text(`Current Turn: ${current.name}`);
   turnIndicator.css("color", current.color);
@@ -117,6 +130,17 @@ function renderDice() {
   });
 }
 
+function getPipLayout(val) {
+  const dot = () => $("<div class='dot'></div>");
+  const patterns = {
+    1: [4], 2: [0, 8], 3: [0, 4, 8],
+    4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+  };
+  return Array.from({ length: 9 }, (_, i) =>
+    patterns[val].includes(i) ? dot() : $("<div></div>")
+  );
+}
+
 function selectDice(index) {
   if (!gameState.hasRolled) return;
   const sel = gameState.selectedDice;
@@ -125,25 +149,21 @@ function selectDice(index) {
   } else if (sel.length < 2) {
     gameState.selectedDice.push(index);
   }
+
   if (gameState.selectedDice.length === 2) {
     const [i1, i2] = gameState.selectedDice;
     const rest = [0, 1, 2, 3].filter(i => ![i1, i2].includes(i));
-    gameState.selectedPair = [gameState.dice[i1] + gameState.dice[i2], gameState.dice[rest[0]] + gameState.dice[rest[1]]];
+    gameState.selectedPair = [
+      gameState.dice[i1] + gameState.dice[i2],
+      gameState.dice[rest[0]] + gameState.dice[rest[1]],
+    ];
     pairConfirmBtn.removeClass("hidden");
   } else {
     gameState.selectedPair = null;
     pairConfirmBtn.addClass("hidden");
   }
-  renderDice();
-}
 
-function getPipLayout(val) {
-  const dot = () => $("<div class='dot'></div>");
-  const patterns = {
-    1: [4], 2: [0, 8], 3: [0, 4, 8],
-    4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
-  };
-  return Array.from({ length: 9 }, (_, i) => patterns[val].includes(i) ? dot() : $("<div></div>"));
+  renderDice();
 }
 
 function confirmMove() {
@@ -157,52 +177,82 @@ function confirmMove() {
   diceContainer.empty();
   showCombosBtn.addClass("hidden");
   pairConfirmBtn.addClass("hidden");
-  nextTurn();
+
+  if (gameState.completedTracks.size >= 6) {
+    finalizeScoring();
+    return;
+  }
+
+  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+  updateUI();
 }
 
 function moveToken(sum, player) {
   if (!player.positions[sum]) player.positions[sum] = 0;
-  const steps = player.positions[sum];
+  const currentStep = player.positions[sum];
   const col = $(`.track-column[data-sum='${sum}']`);
   const cells = col.children();
   col.find(`.token.${player.color}`).remove();
-  if (steps >= tracks[sum].white + tracks[sum].yellow) return;
 
-  const cell = $(cells[steps]);
+  // Calculate the last valid step (top of yellow cells)
+  const lastYellowStep = tracks[sum].white + tracks[sum].yellow - 1;
+  
+  // Prevent moving beyond the last yellow step
+  if (currentStep >= lastYellowStep) return;
+
+  // Move the token
+  const cell = $(cells[currentStep]);
   cell.append(`<div class='token ${player.color}'></div>`);
   player.positions[sum]++;
 
-  // Record entry order into yellow cells
-  const stepIndex = steps;
-  const isYellow = stepIndex >= tracks[sum].white;
-  if (isYellow) {
-    if (!gameState.cellEntryOrder[sum]) gameState.cellEntryOrder[sum] = {};
-    if (!gameState.cellEntryOrder[sum][stepIndex]) gameState.cellEntryOrder[sum][stepIndex] = [];
-
-    const entryList = gameState.cellEntryOrder[sum][stepIndex];
-    if (!entryList.includes(player.color)) entryList.push(player.color);
-
-    // Last yellow cell
-    if (stepIndex === tracks[sum].white + tracks[sum].yellow - 1) {
-      const entry = gameState.cellEntryOrder[sum][stepIndex];
-      if (entry.length === 1) {
-        player.score += tracks[sum].second;
-        message.text(`${player.name} scored ${tracks[sum].second} pts as second to reach last cell of Track ${sum}`);
-      } else if (entry.length === 2) {
-        player.score += tracks[sum].points;
-        message.text(`${player.name} scored ${tracks[sum].points} pts as first to reach last cell of Track ${sum}`);
+  // Check if entered yellow cells
+  const step = player.positions[sum] - 1;
+  if (step >= tracks[sum].white) {
+    if (!gameState.yellowEntries[sum]) gameState.yellowEntries[sum] = [];
+    const alreadyEntered = gameState.yellowEntries[sum].find(e => e.color === player.color);
+    if (!alreadyEntered) {
+      gameState.entryCounter++;
+      gameState.yellowEntries[sum].push({ 
+        color: player.color, 
+        step, 
+        order: gameState.entryCounter 
+      });
+      if (!gameState.completedTracks.has(sum)) {
+        gameState.completedTracks.add(sum);
       }
     }
-  } else {
-    message.text(`${player.name} moved to step ${steps + 1} in Track ${sum}`);
+  }
+}
+
+function finalizeScoring() {
+  for (let sum = 2; sum <= 12; sum++) {
+    const entries = gameState.yellowEntries[sum];
+    if (!entries || entries.length === 0) continue;
+
+    // Sort by highest step, then by latest arrival
+    const sorted = [...entries].sort((a, b) => {
+      if (b.step !== a.step) return b.step - a.step;
+      return b.order - a.order;
+    });
+
+    // Award points to top 2
+    if (sorted[0]) {
+      const p1 = gameState.players.find(p => p.color === sorted[0].color);
+      p1.score += tracks[sum].points;
+    }
+    if (sorted[1]) {
+      const p2 = gameState.players.find(p => p.color === sorted[1].color);
+      p2.score += tracks[sum].second;
+    }
   }
 
   updateUI();
-}
+  winnerDiv.removeClass("hidden");
 
-function nextTurn() {
-  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-  updateUI();
+  // Determine winner (highest score)
+  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const winner = sortedPlayers[0];
+  winnerDiv.text(`${winner.name} wins with ${winner.score} points!`);
 }
 
 function showCombinations() {
@@ -229,21 +279,7 @@ function getUniquePairs(dice) {
   return results;
 }
 
-function updateRulesBox(mode) {
-  const rulesList = $("#rulesContent");
-  rulesList.empty();
-
-  if (mode === "2p") {
-    rulesList.append("<li>First player to enter yellow steps gets reduced points.</li>");
-    rulesList.append("<li>Second player to enter the same yellow step gets full points.</li>");
-    rulesList.append("<li>If both land on same yellow cell, later arrival gets full points.</li>");
-  } else if (mode === "3p") {
-    rulesList.append("<li>Only first 2 players on yellow steps score points.</li>");
-    rulesList.append("<li>Second to reach a cell gets full points; first gets reduced.</li>");
-    rulesList.append("<li>Third to reach same yellow cell gets no points.</li>");
-  }
-}
-
+// Event Listeners
 $("#startGame").click(() => {
   const mode = $("#mode").val();
   startGame(mode);
