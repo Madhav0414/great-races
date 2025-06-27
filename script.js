@@ -12,8 +12,6 @@ const tracks = {
   12: { white: 2, yellow: 2, points: 10, second: 6 },
 };
 
-const playerColors = ["red", "blue", "green"];
-
 let gameState = {
   players: [],
   currentPlayerIndex: 0,
@@ -22,11 +20,10 @@ let gameState = {
   selectedPair: null,
   hasRolled: false,
   completedTracks: new Set(),
-  yellowEntries: {}, // trackNum -> [{ color, step, order }]
+  yellowEntries: {},
   entryCounter: 0,
 };
 
-// DOM Elements
 const gridBoard = $("#gridBoard");
 const trackLabels = $("#trackLabels");
 const scoreDisplay = $("#scoreDisplay");
@@ -55,7 +52,6 @@ function startGame(mode) {
       makePlayer("Green", "green"),
     ];
   }
-
   resetGameState();
   createTracks();
   updateUI();
@@ -80,13 +76,11 @@ function createTracks() {
   for (let i = 2; i <= 12; i++) {
     const col = $(`<div class="track-column" data-sum="${i}"></div>`);
     const totalSteps = tracks[i].white + tracks[i].yellow;
-
     for (let j = 0; j < totalSteps; j++) {
       const cell = $(`<div class="track-cell"></div>`);
       if (j >= tracks[i].white) cell.addClass("finish");
       col.append(cell);
     }
-
     gridBoard.append(col);
     trackLabels.append(`<div>Track ${i}</div>`);
     $("#pointsLabels").append(`
@@ -169,8 +163,8 @@ function selectDice(index) {
 function confirmMove() {
   const [sum1, sum2] = gameState.selectedPair;
   const player = gameState.players[gameState.currentPlayerIndex];
-  moveToken(sum1, player);
-  moveToken(sum2, player);
+  if (!isTrackLocked(sum1, player)) moveToken(sum1, player);
+  if (!isTrackLocked(sum2, player)) moveToken(sum2, player);
   gameState.hasRolled = false;
   gameState.selectedDice = [];
   gameState.selectedPair = null;
@@ -187,35 +181,36 @@ function confirmMove() {
   updateUI();
 }
 
+function isTrackLocked(sum, player) {
+  const maxStep = tracks[sum].white + tracks[sum].yellow;
+  return player.positions[sum] >= maxStep;
+}
+
 function moveToken(sum, player) {
+  const trackInfo = tracks[sum];
   if (!player.positions[sum]) player.positions[sum] = 0;
   const currentStep = player.positions[sum];
   const col = $(`.track-column[data-sum='${sum}']`);
   const cells = col.children();
-  col.find(`.token.${player.color}`).remove();
+  const lastStep = trackInfo.white + trackInfo.yellow - 1;
 
-  // Calculate the last valid step (top of yellow cells)
-  const lastYellowStep = tracks[sum].white + tracks[sum].yellow - 1;
-  
-  // Prevent moving beyond the last yellow step
-  if (currentStep >= lastYellowStep) return;
+  if (currentStep > lastStep) return;
 
-  // Move the token
+  col.find(`.token.${player.color}`).remove(); // Clean up old token
   const cell = $(cells[currentStep]);
   cell.append(`<div class='token ${player.color}'></div>`);
   player.positions[sum]++;
 
-  // Check if entered yellow cells
   const step = player.positions[sum] - 1;
-  if (step >= tracks[sum].white) {
+  if (step >= trackInfo.white) {
     if (!gameState.yellowEntries[sum]) gameState.yellowEntries[sum] = [];
-    const alreadyEntered = gameState.yellowEntries[sum].find(e => e.color === player.color);
+    const alreadyEntered = gameState.yellowEntries[sum].some(e => e.color === player.color);
     if (!alreadyEntered) {
       gameState.entryCounter++;
-      gameState.yellowEntries[sum].push({ 
-        color: player.color, 
-        step, 
-        order: gameState.entryCounter 
+      gameState.yellowEntries[sum].push({
+        color: player.color,
+        step,
+        order: gameState.entryCounter,
       });
       if (!gameState.completedTracks.has(sum)) {
         gameState.completedTracks.add(sum);
@@ -228,14 +223,7 @@ function finalizeScoring() {
   for (let sum = 2; sum <= 12; sum++) {
     const entries = gameState.yellowEntries[sum];
     if (!entries || entries.length === 0) continue;
-
-    // Sort by highest step, then by latest arrival
-    const sorted = [...entries].sort((a, b) => {
-      if (b.step !== a.step) return b.step - a.step;
-      return b.order - a.order;
-    });
-
-    // Award points to top 2
+    const sorted = [...entries].sort((a, b) => b.order - a.order); // latest gets 1st
     if (sorted[0]) {
       const p1 = gameState.players.find(p => p.color === sorted[0].color);
       p1.score += tracks[sum].points;
@@ -245,14 +233,10 @@ function finalizeScoring() {
       p2.score += tracks[sum].second;
     }
   }
-
   updateUI();
   winnerDiv.removeClass("hidden");
-
-  // Determine winner (highest score)
   const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
-  const winner = sortedPlayers[0];
-  winnerDiv.text(`${winner.name} wins with ${winner.score} points!`);
+  winnerDiv.text(`${sortedPlayers[0].name} wins with ${sortedPlayers[0].score} points!`);
 }
 
 function showCombinations() {
