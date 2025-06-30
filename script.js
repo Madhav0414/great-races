@@ -28,7 +28,6 @@ const gridBoard = $("#gridBoard");
 const trackLabels = $("#trackLabels");
 const scoreDisplay = $("#scoreDisplay");
 const turnIndicator = $("#turnIndicator");
-const raceTracker = $("#raceTracker"); // new reference
 const message = $("#message");
 const winnerDiv = $("#winner");
 const rollBtn = $("#rollDiceBtn");
@@ -57,7 +56,6 @@ function startGame(mode) {
   resetGameState();
   createTracks();
   updateUI();
-  updateRaceTracker(); // initialize tracker
 
   $("#gridSection").removeClass("hidden");
   $("#rollDiceBtn").removeClass("hidden");
@@ -75,7 +73,7 @@ function resetGameState() {
   gameState.selectedDice = [];
   gameState.selectedPair = null;
   gameState.hasRolled = false;
-  updateRaceTracker(); // reset tracker
+  updateRaceTracker();
 }
 
 function createTracks() {
@@ -106,10 +104,10 @@ function updateUI() {
   const scores = gameState.players
     .map(p => `<span style="color:${p.color}">${p.name}: ${p.score} pts</span>`)
     .join(" | ");
-  scoreDisplay.html(scores);
+  scoreDisplay.html(`${scores} | Tracks Completed: ${gameState.completedTracks.size}/6`);
 
   const current = gameState.players[gameState.currentPlayerIndex];
-  turnIndicator.text(`Current Turn: ${current.name} | Completed Tracks: ${gameState.completedTracks.size} / 6`);
+  turnIndicator.text(`Current Turn: ${current.name}`);
   turnIndicator.css("color", current.color);
 }
 
@@ -224,14 +222,10 @@ function moveToken(sum, player) {
       });
       if (!gameState.completedTracks.has(sum)) {
         gameState.completedTracks.add(sum);
-        updateRaceTracker(); // update tracker here
+        updateRaceTracker();
       }
     }
   }
-}
-
-function updateRaceTracker() {
-  raceTracker.text(`Completed Tracks: ${gameState.completedTracks.size} / 6`);
 }
 
 function finalizeScoring() {
@@ -252,6 +246,13 @@ function finalizeScoring() {
   winnerDiv.removeClass("hidden");
   const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
   winnerDiv.text(`${sortedPlayers[0].name} wins with ${sortedPlayers[0].score} points!`);
+
+  // ✅ Hide the roll button after the game is over
+  rollBtn.addClass("hidden");
+}
+
+function updateRaceTracker() {
+  scoreDisplay.html(`${gameState.players.map(p => `<span style="color:${p.color}">${p.name}: ${p.score} pts</span>`).join(" | ")} | Tracks Completed: ${gameState.completedTracks.size}/6`);
 }
 
 let selectedMode = null;
