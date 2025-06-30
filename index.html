@@ -12,19 +12,29 @@
 
     <div class="mode-select">
       <label for="mode">Select Mode:</label>
-      <select id="mode">
-        <option value="2p">2 Players</option>
-        <option value="3p">3 Players</option>
-      </select>
+
+      <div class="custom-dropdown">
+        <button id="dropdownButton">Select Mode</button>
+        <div id="dropdownOptions" class="dropdown-options hidden">
+          <div class="option" data-value="2p">2 Players</div>
+          <div class="option" data-value="3p">3 Players</div>
+        </div>
+      </div>
+
       <button id="startGame">Start Game</button>
       <button id="restartGame" class="hidden">Restart Game</button>
     </div>
 
     <div id="scoreDisplay"></div>
-    <div id="turnIndicator">Current Turn: -</div>
+    <div id="turnIndicator" class="hidden">
+  Current Turn: - | <span id="raceTracker">Completed Tracks: 0 / 6</span>
+</div>
 
-    <div id="pointsLabelsz" class="points-labels"></div>
-    <div class="grid-board-wrapper">
+
+    <div id="pointsLabels" class="points-labels"></div>
+
+    <!-- Only one grid section, initially hidden -->
+    <div class="grid-board-wrapper hidden" id="gridSection">
       <div class="grid-board" id="gridBoard"></div>
       <div class="track-labels" id="trackLabels"></div>
     </div>
@@ -42,15 +52,12 @@
   </div>
 
   <div class="rules-box" id="rulesBox">
-    <h3>Game Rules</h3>
-     <ul id="rulesContent">
-    <li>Step into yellow to get points.</li>
-    <li>Only 6 total tracks can complete.</li>
-    <li>Latest arrival in yellow gets full points.</li>
-    <!-- More rules -->
-  </ul>
-</div>
-    <ul id="rulesContent"></ul>
+    <h3 style="font-size: 30px;">Rules</h3>
+    <ul id="rulesContent">
+      <li>Step into yellow to get points.</li>
+      <li>Only 6 total tracks can complete.</li>
+      <li>Latest arrival in yellow gets full points.</li>
+    </ul>
   </div>
 
   <script src="script.js"></script>

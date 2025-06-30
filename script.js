@@ -28,6 +28,7 @@ const gridBoard = $("#gridBoard");
 const trackLabels = $("#trackLabels");
 const scoreDisplay = $("#scoreDisplay");
 const turnIndicator = $("#turnIndicator");
+const raceTracker = $("#raceTracker"); // new reference
 const message = $("#message");
 const winnerDiv = $("#winner");
 const rollBtn = $("#rollDiceBtn");
@@ -52,9 +53,17 @@ function startGame(mode) {
       makePlayer("Green", "green"),
     ];
   }
+
   resetGameState();
   createTracks();
   updateUI();
+  updateRaceTracker(); // initialize tracker
+
+  $("#gridSection").removeClass("hidden");
+  $("#rollDiceBtn").removeClass("hidden");
+  $("#startGame").addClass("hidden");
+  $("#restartGame").removeClass("hidden");
+  $("#turnIndicator").removeClass("hidden");
 }
 
 function resetGameState() {
@@ -66,6 +75,7 @@ function resetGameState() {
   gameState.selectedDice = [];
   gameState.selectedPair = null;
   gameState.hasRolled = false;
+  updateRaceTracker(); // reset tracker
 }
 
 function createTracks() {
@@ -99,7 +109,7 @@ function updateUI() {
   scoreDisplay.html(scores);
 
   const current = gameState.players[gameState.currentPlayerIndex];
-  turnIndicator.text(`Current Turn: ${current.name}`);
+  turnIndicator.text(`Current Turn: ${current.name} | Completed Tracks: ${gameState.completedTracks.size} / 6`);
   turnIndicator.css("color", current.color);
 }
 
@@ -196,7 +206,7 @@ function moveToken(sum, player) {
 
   if (currentStep > lastStep) return;
 
-  col.find(`.token.${player.color}`).remove(); // Clean up old token
+  col.find(`.token.${player.color}`).remove();
   const cell = $(cells[currentStep]);
   cell.append(`<div class='token ${player.color}'></div>`);
   player.positions[sum]++;
@@ -214,16 +224,21 @@ function moveToken(sum, player) {
       });
       if (!gameState.completedTracks.has(sum)) {
         gameState.completedTracks.add(sum);
+        updateRaceTracker(); // update tracker here
       }
     }
   }
+}
+
+function updateRaceTracker() {
+  raceTracker.text(`Completed Tracks: ${gameState.completedTracks.size} / 6`);
 }
 
 function finalizeScoring() {
   for (let sum = 2; sum <= 12; sum++) {
     const entries = gameState.yellowEntries[sum];
     if (!entries || entries.length === 0) continue;
-    const sorted = [...entries].sort((a, b) => b.order - a.order); // latest gets 1st
+    const sorted = [...entries].sort((a, b) => b.order - a.order);
     if (sorted[0]) {
       const p1 = gameState.players.find(p => p.color === sorted[0].color);
       p1.score += tracks[sum].points;
@@ -238,6 +253,32 @@ function finalizeScoring() {
   const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
   winnerDiv.text(`${sortedPlayers[0].name} wins with ${sortedPlayers[0].score} points!`);
 }
+
+let selectedMode = null;
+
+$("#dropdownButton").click(() => {
+  $("#dropdownOptions").toggleClass("hidden");
+});
+
+$(".option").click(function () {
+  const text = $(this).text();
+  selectedMode = $(this).data("value");
+  $("#dropdownButton").text(text);
+  $("#dropdownOptions").addClass("hidden");
+});
+
+$("#startGame").click(() => {
+  if (!selectedMode) {
+    alert("Please select a mode first!");
+    return;
+  }
+  startGame(selectedMode);
+});
+
+rollBtn.click(rollDice);
+pairConfirmBtn.click(confirmMove);
+showCombosBtn.hover(showCombinations);
+restartBtn.click(() => location.reload());
 
 function showCombinations() {
   const pairs = getUniquePairs(gameState.dice);
@@ -262,17 +303,3 @@ function getUniquePairs(dice) {
   }
   return results;
 }
-
-// Event Listeners
-$("#startGame").click(() => {
-  const mode = $("#mode").val();
-  startGame(mode);
-  rollBtn.removeClass("hidden");
-  $("#startGame").addClass("hidden");
-  restartBtn.removeClass("hidden");
-});
-
-rollBtn.click(rollDice);
-pairConfirmBtn.click(confirmMove);
-showCombosBtn.click(showCombinations);
-restartBtn.click(() => location.reload());

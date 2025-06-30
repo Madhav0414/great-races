@@ -1,8 +1,56 @@
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to bottom right, #fdf3e7, #ffe0b2);
+  background: linear-gradient(to bottom right, #fefbe3, #fefbe3);
   margin: 0;
   padding: 20px;
+}
+
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+#dropdownButton {
+  padding: 10px 16px;
+  margin: 10px 8px 0;
+  font-size: 16px;
+  cursor: pointer;
+  background: linear-gradient(to right, #4caf50, #43a047);
+  border: none;
+  color: white;
+  border-radius: 6px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+#dropdownButton:hover {
+  background: linear-gradient(to right, #388e3c, #2e7d32);
+  transform: scale(1.05);
+}
+
+.dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  min-width: 120px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.option {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.option:hover {
+  background: #c8e6c9;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .container {
@@ -170,10 +218,6 @@ button:hover {
   transform: scale(1.05);
 }
 
-.hidden {
-  display: none;
-}
-
 #combinations {
   margin-top: 10px;
   font-weight: bold;
@@ -197,24 +241,24 @@ button:hover {
   font-weight: bold;
   font-size: 18px;
 }
-
-/* Rules Box with Hover Reveal Effect */
+/* Rules Box with Smooth Expand Effect */
+/* Rules Box Style */
+/* Rules Box Style */
 .rules-box {
   position: absolute;
   top: 20px;
   right: 20px;
   background: #fff3e0;
   border: 2px solid #ff9800;
-  padding: 15px;
-  width: 260px;
+  padding: 20px 15px;
+  width: 200px;
   border-radius: 10px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  transition: max-height 0.4s ease;
-  max-height: 40px;
   cursor: pointer;
+  transition: all 0.4s ease;
 }
 
 .rules-box h3 {
@@ -224,15 +268,36 @@ button:hover {
 }
 
 .rules-box ul {
-  margin-top: 10px;
-  padding-left: 18px;
-  opacity: 0;
+  margin-top: 8px;
+  padding-left: 20px;
   max-height: 0;
   overflow: hidden;
-  transition: all 0.4s ease;
+  opacity: 0;
+  transition: max-height 0.5s ease, opacity 0.5s ease, padding 0.3s ease;
+}
+
+/* On Hover: Fully Expanded Stylish Card */
+.rules-box:hover {
+  background: #ffffff;
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border-color: #ffa726;
+}
+
+.rules-box:hover h3 {
+  color: #333333;
+  font-size: 18px;
 }
 
 .rules-box:hover ul {
-  opacity: 1;
   max-height: 500px;
+  opacity: 1;
+  padding-top: 8px;
+}
+
+.rules-box li {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
 }
